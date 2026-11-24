@@ -30,6 +30,8 @@ test("two agents with different HEX colors get distinct rules", () => {
   assert.match(css, /\[data-oc-agent-color="reviewer"\]/)
   assert.match(css, /color: #2e86c1;/)
   assert.match(css, /\[data-slot="composer-controls"\] \[data-oc-agent-color="planner"\]/)
+  assert.match(css, /\[data-component="user-message"\]:has\(\[data-oc-agent-color="planner"\]\)/)
+  assert.match(css, /box-shadow: inset 0 0 0 1px #e67e22;/)
 })
 
 test("named theme colors are not agent colors and keep the default appearance", () => {
@@ -66,6 +68,13 @@ test("primary labels match exactly and subagent labels match by inclusion", () =
   assert.equal(matchAgent("Runner: team/reviewer", map, "contains"), "team/reviewer")
   assert.equal(matchAgent("Someone else", map, "exact"), undefined)
   assert.equal(matchAgent("", map, "contains"), undefined)
+})
+
+test("subagent matching respects word boundaries", () => {
+  const map = buildColorMap([{ id: "reviewer", color: "#ff6b6b" }])
+  assert.equal(matchAgent("Subagent: reviewer", map, "contains"), "reviewer")
+  assert.equal(matchAgent("Subagent: reviewer-old", map, "contains"), undefined)
+  assert.equal(matchAgent("Subagent: senior reviewer", map, "contains"), "reviewer")
 })
 
 test("label candidates cover both the capitalized id and the raw id", () => {

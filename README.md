@@ -1,17 +1,20 @@
 # OpenCode Agent Colors
 
+[![CI](https://github.com/ehsanraad84/opencode-agent-colors/actions/workflows/ci.yml/badge.svg)](https://github.com/ehsanraad84/opencode-agent-colors/actions/workflows/ci.yml)
+
 A small, GUI-only OpenCode Desktop plugin that shows each agent's configured
 `color` on its identity in the chat timeline. It does not modify OpenCode, add a
 backend, a database, a settings UI, or any runtime dependency beyond the SDK
-that Desktop already provides. The color appears both on message identity labels
-and on the agent selector in the composer (bottom-left, beside the model).
+that Desktop already provides. The color appears on message identity labels, on
+the agent selector in the composer (bottom-left, beside the model), and as a
+thin outline on your own message bubbles so they are easy to spot.
 
 ## Status
 
 - Built against the Desktop GUI plugin SDK (`@opencode/plugin` 2.4.1). The GUI
   API is officially marked **experimental**.
-- All 10 automated tests pass (`npm test`), including a smoke test that loads
-  the built bundle with a stubbed SDK and DOM.
+- All 11 automated tests pass (`npm test`), including a smoke test that loads
+  the built bundle with a stubbed SDK and DOM. CI runs them on every push.
 - Verified on a real Windows OpenCode Desktop v2.4.1: the GUI plugin loads, the
   server's agent API returns the configured colors, and timeline labels are
   tagged with the matching agent id/color. The remaining visual checklist below
@@ -106,12 +109,14 @@ plugin's own validation.
    5 seconds, so config edits appear without a restart.
 2. Only strict `#RRGGBB` values are accepted; they are lowercased and passed to
    CSS directly. No random colors, no generated palette.
-3. The visible label is matched to an agent id. Desktop capitalizes agent ids in
+3. Timeline labels are matched to an agent id with word-boundary-safe matching. Desktop capitalizes agent ids in
    user-message metadata (`reviewer` → `Reviewer`) and uses the raw or
-   capitalized id in subagent rows and the composer selector. Both forms are recognized.
+   capitalized id in subagent rows. The composer button instead uses the session's actual agent id.
 4. A private `data-oc-agent-color` attribute is added to the existing label
    element, and an injected `Style` rule colors that attribute. The attribute
-   is removed again when the label no longer matches or the plugin unloads.
+   is removed again when the label no longer matches or the plugin unloads. The
+   bubble outline is drawn with `:has()` from the tagged meta label, so no
+   extra DOM mutation is needed.
 5. The color map lives in a Solid signal, so both a config edit (next poll) and
    a conversation switch re-inject the CSS and re-tag the visible labels.
 
@@ -154,6 +159,7 @@ Run these against a real Desktop build after installing:
 - [ ] A primary agent message and a subagent row both show their configured color.
 - [ ] Switching between conversations keeps the right color on each label.
 - [ ] Editing an agent's color in its Markdown/JSON config updates the chat without restart.
+- [ ] Your own message bubbles show a thin colored outline matching the agent.
 - [ ] Typing, tool calls, streaming, copy menu and other Desktop features still work.
 
 ## Development

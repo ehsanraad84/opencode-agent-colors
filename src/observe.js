@@ -1,15 +1,31 @@
-import { LABEL_TARGETS, matchAgent } from "./core.js"
+import { LABEL_TARGETS, hasColor, matchAgent } from "./core.js"
 
 const ATTRIBUTE = "data-oc-agent-color"
+const COMPOSER_SELECTOR = '[data-slot="composer-controls"] button'
 
-/** @param {ParentNode} root @param {Map<string, { id: string, color: string } | null>} map */
-export function annotate(root, map) {
+/**
+ * Tags existing identity elements with the agent id so `Style` rules can color
+ * them. This uses the Desktop app's internal `data-slot` attributes; they are
+ * not part of the public GUI SDK and may change in a future release.
+ *
+ * @param {ParentNode} root
+ * @param {Map<string, { id: string, color: string } | null>} map
+ * @param {string | undefined} currentAgentId
+ */
+export function annotate(root, map, currentAgentId) {
   for (const target of LABEL_TARGETS) {
     for (const element of root.querySelectorAll(target.selector)) {
       const id = matchAgent(element.textContent, map, target.mode)
       if (id) element.setAttribute(ATTRIBUTE, id)
       else element.removeAttribute(ATTRIBUTE)
     }
+  }
+
+  // The composer button is identified by the session's agent, not by its
+  // visible label, so renamed or ambiguous labels cannot mis-tag it.
+  for (const element of root.querySelectorAll(COMPOSER_SELECTOR)) {
+    if (hasColor(map, currentAgentId)) element.setAttribute(ATTRIBUTE, currentAgentId)
+    else element.removeAttribute(ATTRIBUTE)
   }
 }
 
@@ -19,30 +35,31 @@ export function clear(root) {
 }
 
 /**
- * Tags existing identity elements with the agent id so `Style` rules can color
- * them. This uses the Desktop app's internal `data-slot` attributes; they are
- * not part of the public GUI SDK and may change in a future release.
- *
  * @param {() => Map<string, { id: string, color: string } | null>} getMap
+ * @param {() => string | undefined} getAgentId
  */
-export function createAnnotator(getMap) {
+export function createAnnotator(getMap, getAgentId) {
   const root = () => document.body ?? document.documentElement
   let scheduled = false
   let pending
+  let pendingAgent
 
   const run = () => {
     scheduled = false
     try {
-      annotate(root(), pending ?? getMap())
+      const agent = pendingAgent ? pendingAgent.value : getAgentId()
+      annotate(root(), pending ?? getMap(), agent)
     } catch {
       // A partially rendered timeline must never break the window.
     } finally {
       pending = undefined
+      pendingAgent = undefined
     }
   }
 
-  const schedule = (map) => {
+  const schedule = (map, agent) => {
     if (map) pending = map
+    if (agent !== undefined) pendingAgent = { value: agent }
     if (scheduled) return
     scheduled = true
     queueMicrotask(run)
@@ -53,8 +70,8 @@ export function createAnnotator(getMap) {
   schedule()
 
   return {
-    refresh(map) {
-      schedule(map)
+    refresh(map, agent) {
+      schedule(map, agent)
     },
     dispose() {
       observer.disconnect()

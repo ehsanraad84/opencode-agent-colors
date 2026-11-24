@@ -28,8 +28,23 @@ export default Plugin.define({
       if (!disposed) setAgentList(all)
     }
 
+    // The session record carries the selected agent id, so the composer button
+    // can be identified directly instead of guessing from its label.
+    const currentAgentId = () => {
+      const session = ctx.sessions.current()
+      if (!session) return undefined
+      const server = ctx.servers.get(session.server.id)
+      let info
+      try {
+        info = (server?.data as any)?.session?.get?.(session.id)
+      } catch {
+        // A session that has not synced yet has no agent to read.
+      }
+      return typeof info?.agent === "string" ? info.agent : undefined
+    }
+
     const agents = () => agentList()
-    const annotator = createAnnotator(() => buildColorMap(agents()))
+    const annotator = createAnnotator(() => buildColorMap(agents()), currentAgentId)
 
     ctx.add(Style, () => {
       const map = buildColorMap(agents())
@@ -38,7 +53,7 @@ export default Plugin.define({
 
     createEffect(() => {
       const map = buildColorMap(agents())
-      annotator.refresh(map)
+      annotator.refresh(map, currentAgentId())
     })
 
     // Re-read agents when the routed conversation changes, and poll so config

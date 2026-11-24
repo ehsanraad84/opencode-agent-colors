@@ -73,7 +73,7 @@ function loadBundle() {
 
   const meta = [element("Planner")]
   const subagent = [element("Subagent: reviewer")]
-  const composer = [element("planner")]
+  const composer = [element("not even the agent name")]
   const root = {
     querySelectorAll(selector) {
       if (selector.includes("[data-oc-agent-color]")) return [...meta, ...subagent, ...composer]
@@ -115,9 +115,10 @@ test("built bundle registers Style and tags primary and subagent labels", async 
 
   let styleFn
   let location = { directory: "/project" }
+  let currentAgent = "planner"
   const otherConversation = [{ id: "tester", color: "#123456" }]
   const ctx = {
-    sessions: { current: () => ({ server: { id: "sidecar" }, location }) },
+    sessions: { current: () => ({ id: "ses_test", server: { id: "sidecar" }, location }) },
     servers: {
       list: () => ["sidecar"],
       get: () => ({
@@ -128,6 +129,7 @@ test("built bundle registers Style and tags primary and subagent labels", async 
             }),
           },
         },
+        data: { session: { get: () => ({ agent: currentAgent }) } },
       }),
     },
     add: (registry, item) => {
@@ -147,17 +149,28 @@ test("built bundle registers Style and tags primary and subagent labels", async 
   assert.equal(subagent[0].getAttribute("data-oc-agent-color"), "reviewer")
   assert.equal(composer[0].getAttribute("data-oc-agent-color"), "planner")
 
+  // An agent without a configured color is left untagged.
+  currentAgent = "build"
+  rerun()
+  await new Promise((resolve) => setTimeout(resolve, 20))
+  assert.equal(composer[0].getAttribute("data-oc-agent-color"), undefined)
+  currentAgent = "planner"
+  rerun()
+  await new Promise((resolve) => setTimeout(resolve, 20))
+
   // A config edit changes the injected CSS without a restart.
   agents[0].color = "#D35400"
   assert.match(styleFn(), /color: #d35400;/)
 
   // Routing to another conversation resolves that location's agent catalog.
   location = { directory: "/other" }
+  currentAgent = "tester"
   rerun()
   await new Promise((resolve) => setTimeout(resolve, 20))
   assert.match(styleFn(), /data-oc-agent-color="tester"/)
   assert.match(styleFn(), /color: #123456;/)
   assert.doesNotMatch(styleFn(), /data-oc-agent-color="planner"/)
+  assert.equal(composer[0].getAttribute("data-oc-agent-color"), "tester")
 
   // Unloading the plugin removes only its own attributes.
   for (const fn of cleanup) fn()
