@@ -149,6 +149,17 @@ test("built bundle registers Style and tags primary and subagent labels", async 
   assert.equal(subagent[0].getAttribute("data-oc-agent-color"), "reviewer")
   assert.equal(composer[0].getAttribute("data-oc-agent-color"), "planner")
 
+  // The live button label wins over a stale session record.
+  composer[0].textContent = "Planner"
+  currentAgent = "build"
+  rerun()
+  await new Promise((resolve) => setTimeout(resolve, 20))
+  assert.equal(composer[0].getAttribute("data-oc-agent-color"), "planner")
+  composer[0].textContent = "not even the agent name"
+  currentAgent = "planner"
+  rerun()
+  await new Promise((resolve) => setTimeout(resolve, 20))
+
   // An agent without a configured color is left untagged.
   currentAgent = "build"
   rerun()

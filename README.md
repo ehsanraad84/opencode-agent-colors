@@ -111,7 +111,7 @@ plugin's own validation.
    CSS directly. No random colors, no generated palette.
 3. Timeline labels are matched to an agent id with word-boundary-safe matching. Desktop capitalizes agent ids in
    user-message metadata (`reviewer` → `Reviewer`) and uses the raw or
-   capitalized id in subagent rows. The composer button instead uses the session's actual agent id.
+   capitalized id in subagent rows. The composer button prefers its live label and falls back to the session's agent id.
 4. A private `data-oc-agent-color` attribute is added to the existing label
    element, and an injected `Style` rule colors that attribute. The attribute
    is removed again when the label no longer matches or the plugin unloads. The

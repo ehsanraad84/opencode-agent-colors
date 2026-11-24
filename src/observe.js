@@ -21,11 +21,17 @@ export function annotate(root, map, currentAgentId) {
     }
   }
 
-  // The composer button is identified by the session's agent, not by its
-  // visible label, so renamed or ambiguous labels cannot mis-tag it.
-  for (const element of root.querySelectorAll(COMPOSER_SELECTOR)) {
-    if (hasColor(map, currentAgentId)) element.setAttribute(ATTRIBUTE, currentAgentId)
-    else element.removeAttribute(ATTRIBUTE)
+  // The first control is the agent selector. The synced session record can lag
+  // behind a fresh selection, so prefer its live label and use the session's
+  // agent id only as a fallback. Only this button is tagged; model/variant
+  // buttons keep their default appearance.
+  const [agentButton, ...others] = root.querySelectorAll(COMPOSER_SELECTOR)
+  for (const element of others) element.removeAttribute(ATTRIBUTE)
+  if (agentButton) {
+    const byLabel = matchAgent(agentButton.textContent, map, "exact")
+    const id = byLabel ?? (hasColor(map, currentAgentId) ? currentAgentId : undefined)
+    if (id) agentButton.setAttribute(ATTRIBUTE, id)
+    else agentButton.removeAttribute(ATTRIBUTE)
   }
 }
 
