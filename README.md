@@ -9,6 +9,8 @@ that Desktop already provides. The color appears on message identity labels, on
 the agent selector in the composer (bottom-left, beside the model), and as a
 thin outline on your own message bubbles so they are easy to spot.
 
+![Colored agent labels, composer selector and outlined user bubble in OpenCode Desktop](docs/agent-colors-demo.png)
+
 ## Status
 
 - Built against the Desktop GUI plugin SDK (`@opencode/plugin` 2.4.1). The GUI
